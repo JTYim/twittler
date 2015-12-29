@@ -1,27 +1,128 @@
 <!DOCTYPE html>
 <html>
-  <head>
-    <script src="jquery.js"></script>
-    <script src="data_generator.js"></script>
-  </head>
-  <body>
-    <script>
+	<head>
+		<script src="jquery.js"></script>
+		<script src="data_generator.js"></script>
+		<style>			
+			button {
+				height: 50px;
+				width: 200px;
+				border-radius: 20px;
+			}
+			p {
+				margin: 0px 0px 15px 0px;
+				padding-left: 120px;
+			}
+			#userName {
+				color: blue;
+				padding-left: 10px;
+				font-weight: bold;
+				font-style: italic;
+			}
+		</style>
+	</head>
+	
+	<body>
+		<script>
 
-      $(document).ready(function(){
-        var $body = $('body');
-        $body.html('');
+			$(document).ready(function(){
+				var $body = $('body');
+				$body.html('');
+		
+				// static html element setup & css 
+				var $container = $('<div>').appendTo('body')
+					.attr('id', 'container')
+					.css({ 'max-width':'1280px' , 'min-height':'850px' , 'margin':'0 auto' , 'padding-left':'10px'})
+				var $header = $('<div>').appendTo($container)
+					.addClass('header')
+				$('<button>').appendTo($header)
+					.addClass('updateButton')
+					.text('UPDATE STREAM')
+				$('<h3>').appendTo($header)
+					.attr('id', 'hdg')
+					.text('FULL STREAM')
+				var $stream = $('<div>').appendTo($container)
+					.attr('id', 'stream')
+					.css({ 'background-color' : '#b3f0ff' , 'overflow' : 'scroll',
+						'max-width' : '650px' , 'height' : '800px' , 'padding-left' : '10px' })
+				var $userTimeline = $('<div>').appendTo($container)
+					.attr('id', 'userTimeline')
+					.css({ 'display' : 'none' , 'background-color' : '#b3f0ff' , 'overflow' : 'scroll' ,
+						'max-width' : '650px' , 'height' : '800px' , 'padding-left' : '10px'})
+				$('<div>').appendTo($userTimeline)
+					.addClass('start')
 
-        var index = streams.home.length - 1;
-        while(index >= 0){
-          var tweet = streams.home[index];
-          var $tweet = $('<div></div>');
-          $tweet.text('@' + tweet.user + ': ' + tweet.message);
-          $tweet.appendTo($body);
-          index -= 1;
-        }
 
-      });
+				// Show stream for specific user on click of username 
+				$('#stream').on('click', '#userName', function(){
+					$('#userTimeline').html('')
+					$('#stream').slideUp(500);
+					$('#userTimeline').fadeIn(900);
+					// Derive username as string for display when calling display function
+					// Could also use data attribute, but want to explore 'this'
+					var name = $(this).parent().attr('class');
+					$.each(streams.users[name], function(idx,val){
+						showEachTweet(val, '#userTimeline');
+					});
+					// Update heading and button for UI
+					$('#hdg').text(name+"'s STREAM");
+					$('.updateButton').removeClass().addClass('fullStreamButton')
+							.text('SHOW FULL STREAM ');
+				});
 
-    </script>
-  </body>
+
+				// Show stream for all users on click on button
+				$('#container').on('click', '.fullStreamButton', function(){
+					$('#userTimeline').fadeOut(500);
+					$('#stream').slideDown(1000);
+					// Update heading and button for UI
+					$('#hdg').text("FULL STREAM");
+					$('.fullStreamButton').removeClass().addClass('updateButton')
+							.text('UPDATE STREAM');
+				});
+
+
+				// Renders each Tweet to DOM
+				function showEachTweet(tweet, target){
+					var $tweet = $('<div id="user" class="'+tweet.user+'"></div>');
+					var $timeStamp = tweet.created_at.toLocaleTimeString()
+					$tweet
+						.append($timeStamp+'<span id="userName">@' + tweet.user +' : </span>')
+						.append('<p class="msg">'+tweet.message+'</p>')
+						.prependTo(target);
+				};	
+
+
+				// Gets new Tweets from the point of last update 
+				var index = 0;
+				function getNewTweets(){
+					// Confirms if new Tweets are available, and avoids duplicate renderings
+					if(index>=streams.home.length){
+						return message("UP TO DATE");
+					};
+					// Gets new Tweets only and calls DOM update function on each					
+					var $stream = streams.home.slice(index,streams.home.length)
+					$.each($stream, function(idx,val){
+						index = index+1; 
+						showEachTweet(val,'#stream');
+					});
+				};
+				$('.updateButton').on('click', getNewTweets);
+				getNewTweets();
+
+
+				// Temporarily renders a message in place of the heading
+				// Currently called when no new Tweets are available for rendering
+				function message(msg){
+					var temp = $('#hdg').text();
+					$('#hdg').text(msg).css('color','green');
+					setTimeout( function(){
+						$('#hdg').text(temp).css('color','black'); 
+					} , 500);
+				}
+
+			});
+
+		</script>
+	</body>
 </html>
